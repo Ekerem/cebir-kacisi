@@ -97,6 +97,26 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
 #catArrow::after{content:'';position:absolute;right:-11px;top:50%;margin-top:-8px;border:8px solid transparent;border-left:11px solid #c0283d;}
 #catInd .face{animation:pulse 1s ease-in-out infinite;}
 @keyframes pulse{50%{transform:scale(1.08);}}
+/* Akıllı tahta modu: büyük kontroller ve yazılar */
+body.tahta #stick{width:220px;height:220px;}
+body.tahta #knob{width:100px;height:100px;margin:-50px 0 0 -50px;}
+body.tahta #board{max-width:900px;}
+body.tahta #qtext{font-size:clamp(20px,2.6vw,32px);}
+body.tahta .chip{font-size:19px;padding:7px 15px 6px;}
+body.tahta #hearts svg{width:26px;height:26px;}
+body.tahta .iconbtn{width:54px;height:54px;}
+body.tahta #toast{font-size:24px;}
+body.tahta #toast small{font-size:18px;}
+body.tahta #keyhint{font-size:17px;}
+.toggle{display:flex;align-items:center;gap:12px;border:0;cursor:pointer;text-align:left;width:100%;border-radius:16px;padding:10px 12px;
+  background:rgba(27,33,48,.05);box-shadow:inset 0 1px 3px rgba(20,26,44,.12);color:var(--ink);font:700 13px/1.3 var(--body);}
+.toggle b{display:block;font:800 16px/1.2 var(--display);}
+.toggle span:first-child{flex:1;min-width:0;color:var(--ink-soft);}
+.toggle .sw{flex:0 0 auto;width:48px;height:28px;border-radius:999px;background:#c9cfda;position:relative;transition:background .15s;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);}
+.toggle .sw::after{content:'';position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .15s;}
+.toggle[aria-checked="true"] .sw{background:var(--good);}
+.toggle[aria-checked="true"] .sw::after{transform:translateX(20px);}
+.toggle:focus-visible{outline:3px solid #3b82f6;outline-offset:2px;}
 #keyhint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);
   font:700 13px var(--body);color:var(--ink-soft);padding:4px 12px;border-radius:999px;white-space:nowrap;}
 @media (hover:none){#keyhint{display:none;}}
@@ -104,7 +124,8 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
 /* ---------- ekranlar ---------- */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
   padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 22px) max(16px,env(safe-area-inset-left,0px));
-  box-sizing:border-box;}
+  box-sizing:border-box;overflow-y:auto;touch-action:pan-y;}
+.screen > .card{flex:0 0 auto;}
 .screen.center{justify-content:center;background:radial-gradient(ellipse at center,rgba(20,26,44,.25),rgba(20,26,44,.55));}
 .card{width:100%;max-width:450px;border-radius:28px;padding:20px 20px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;}
 .title{margin:0;font:800 clamp(40px,11.5vw,56px)/.92 var(--display);letter-spacing:-.01em;color:#3a6b52;
@@ -172,7 +193,7 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
   </div></div>
 </div>
 <div id="stick" hidden><div id="knob"></div></div>
-<div id="keyhint" class="glass" hidden>Ok tuşları / W A S D ile koş · Tekerlek ile yakınlaş</div>
+<div id="keyhint" class="glass" hidden>Gideceğin yere dokun ya da tıkla · Joystick veya ok tuşları da olur</div>
 <div id="catInd" hidden><div id="catArrow"></div><div class="face">😾</div></div>
 <div id="toast" class="glass"><span class="ic" id="toastIc">✓</span><div id="toastBody"></div></div>
 
@@ -194,7 +215,8 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
     </div>
     <div id="how" hidden>
       <ul>
-        <li>Joystick veya ok tuşlarıyla koş.</li>
+        <li>Gitmek istediğin yere ya da cevap baloncuğuna dokun (veya tıkla), karakter oraya koşar. Parmağını basılı tutup gezdirirsen seni takip eder.</li>
+        <li>İstersen joystick'i ya da ok tuşlarını da kullanabilirsin.</li>
         <li>Tahtadaki sorunun doğru cevabının olduğu baloncuğa koş. Renkli oklar baloncukları gösterir.</li>
         <li>Doğru cevap: puan + kısa süre hız. Gri Bıyık bir an sersemler.</li>
         <li>Yanlış cevap: Gri Bıyık hızlanır.</li>
@@ -203,6 +225,7 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
         <li>Yakalanırsan bir can gider. 4 bölümü bitir!</li>
       </ul>
     </div>
+    <button class="toggle" id="tahtaBtn" role="switch" aria-checked="false"><span><b>Akıllı tahta modu</b>Büyük kontroller, daha akıcı görüntü</span><span class="sw"></span></button>
     <div class="btns"><button class="btn sec" id="updBtn">🔄 Güncelle</button></div>
     <div id="updmsg"></div>
   </div>
@@ -252,7 +275,7 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
 <script>
 'use strict';
 /* ================= Ayarlar ================= */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const GITHUB_USER = 'Ekerem';           // GitHub kullanıcı adınız
 const REPO_NAME   = 'cebir-kacisi';
 const PAGES_BASE  = `https://${GITHUB_USER}.github.io/${REPO_NAME}/`;
@@ -893,6 +916,7 @@ function placeShowcase() {
 function toMenu() { G.mode = 'menu'; placeShowcase(); showOnly('menu'); }
 function newGame() { audio(); Object.assign(G, { level: 0, lives: 3, score: 0 }); startLevel(); }
 function startLevel() {
+  G.target = null; tapMarker.visible = false;
   const L = LEVELS[G.level];
   G.got = 0; G.catBonus = 0; G.pool = []; G.q = null;
   hero.position.set(0, 0, 9); hero.rotation.y = Math.PI; camTarget.set(hero.position.x - 1, 0.9, hero.position.z - 2.2);
@@ -1033,11 +1057,88 @@ try { const d = parseFloat(localStorage.getItem('cebir-zoom')); if (d >= CAM.min
 function zoomBy(f) { CAM.dist = Math.max(CAM.min, Math.min(CAM.max, CAM.dist * f)); try { localStorage.setItem('cebir-zoom', CAM.dist.toFixed(2)); } catch (e) {} }
 canvas.addEventListener('wheel', e => { e.preventDefault(); zoomBy(Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0012))); }, { passive: false });
 const touches = new Map(); let pinch0 = 0;
-canvas.addEventListener('pointerdown', e => { touches.set(e.pointerId, [e.clientX, e.clientY]); if (touches.size === 2) { const [a, b] = [...touches.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+// Dokunarak / tıklayarak yürüme: yere dokunulan noktaya (veya yakındaki cevap baloncuğuna) koş
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hitP = new THREE.Vector3();
+const tapMarker = new THREE.Mesh(new THREE.RingGeometry(0.38, 0.66, 40), new THREE.MeshBasicMaterial({ color: col(0xf6a623), transparent: true, opacity: 0.9, depthWrite: false }));
+tapMarker.rotation.x = -Math.PI / 2; tapMarker.position.y = 0.03; tapMarker.visible = false; scene.add(tapMarker);
+// Izgara üzerinde A* yol bulma: sıraların etrafından en kısa yol
+const NAV = { cell: 0.5, n: Math.round(2 * HALF / 0.5) };
+function navBlocked(x, z) {
+  if (Math.abs(x) > HALF - 0.5 || Math.abs(z) > HALF - 0.5) return true;
+  for (const o of OBST) if (Math.hypot(x - o.x, z - o.z) < o.r + 0.45) return true;
+  return false;
+}
+function freePoint(x, z) {   // engelin içindeki noktayı en yakın boş noktaya it
+  for (const o of OBST) { const dx = x - o.x, dz = z - o.z, d = Math.hypot(dx, dz) || 1e-3, m = o.r + 0.55; if (d < m) { x = o.x + dx / d * m; z = o.z + dz / d * m; } }
+  return [Math.max(-HALF + 0.6, Math.min(HALF - 0.6, x)), Math.max(-HALF + 0.6, Math.min(HALF - 0.6, z))];
+}
+function clearLine(ax, az, bx, bz) {
+  const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 0.2);
+  for (let i = 1; i <= n; i++) { const t = i / n; if (navBlocked(ax + (bx - ax) * t, az + (bz - az) * t)) return false; }
+  return true;
+}
+function findPath(sx, sz, tx, tz) {
+  if (clearLine(sx, sz, tx, tz)) return [[tx, tz]];
+  const N = NAV.n, C = NAV.cell, idx = (i, j) => j * N + i, toI = v => Math.max(0, Math.min(N - 1, Math.floor((v + HALF) / C))), cx = i => -HALF + (i + 0.5) * C;
+  const si = toI(sx), sj = toI(sz), ti = toI(tx), tj = toI(tz);
+  const g = new Float32Array(N * N).fill(Infinity), from = new Int32Array(N * N).fill(-1), closed = new Uint8Array(N * N), open = [];
+  const h = (i, j) => Math.hypot(i - ti, j - tj);
+  g[idx(si, sj)] = 0; open.push([h(si, sj), si, sj]);
+  let found = false, guard = 0;
+  while (open.length && guard++ < 20000) {
+    let bi = 0; for (let k = 1; k < open.length; k++) if (open[k][0] < open[bi][0]) bi = k;
+    const [, i, j] = open.splice(bi, 1)[0], id = idx(i, j);
+    if (closed[id]) continue; closed[id] = 1;
+    if (i === ti && j === tj) { found = true; break; }
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+      if (!di && !dj) continue; const ni = i + di, nj = j + dj; if (ni < 0 || nj < 0 || ni >= N || nj >= N) continue;
+      const nid = idx(ni, nj); if (closed[nid] || navBlocked(cx(ni), cx(nj))) continue;
+      if (di && dj && (navBlocked(cx(i + di), cx(j)) || navBlocked(cx(i), cx(j + dj)))) continue;
+      const ng = g[id] + (di && dj ? 1.414 : 1);
+      if (ng < g[nid]) { g[nid] = ng; from[nid] = id; open.push([ng + h(ni, nj), ni, nj]); }
+    }
+  }
+  if (!found) return [[tx, tz]];
+  const pts = []; for (let id = idx(ti, tj); id !== -1 && id !== idx(si, sj); id = from[id]) pts.unshift([cx(id % N), cx(Math.floor(id / N))]);
+  pts[pts.length - 1] = [tx, tz];
+  const out = []; let px = sx, pz = sz, k = 0;   // görüş hattıyla kısalt
+  while (k < pts.length) { let far = k; for (let m = pts.length - 1; m > k; m--) if (clearLine(px, pz, pts[m][0], pts[m][1])) { far = m; break; } out.push(pts[far]); [px, pz] = pts[far]; k = far + 1; }
+  return out;
+}
+function setTapTarget(e) {
+  if (G.mode !== 'play') return;
+  const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  let best = null, bd = 1e9;   // önce baloncuk/etiket isabeti
+  for (const b of bubbles) { const d = ray.ray.distanceToPoint(tmpV.set(b.x, 1.6, b.z)); if (d < 1.6 && d < bd) { bd = d; best = b; } }
+  if (best) { G.target = { x: best.x, z: best.z }; }
+  else if (ray.ray.intersectPlane(groundPlane, hitP)) { G.target = { x: Math.max(-HALF + 0.6, Math.min(HALF - 0.6, hitP.x)), z: Math.max(-HALF + 0.6, Math.min(HALF - 0.6, hitP.z)) }; }
+  if (G.target) {
+    [G.target.x, G.target.z] = freePoint(G.target.x, G.target.z);
+    G.path = findPath(hero.position.x, hero.position.z, G.target.x, G.target.z);
+    tapMarker.position.x = G.target.x; tapMarker.position.z = G.target.z; tapMarker.visible = true; tapMarker.userData.t = 0;
+  }
+}
+canvas.addEventListener('pointerdown', e => {
+  touches.set(e.pointerId, [e.clientX, e.clientY]); audio();
+  if (touches.size === 2) { const [a, b] = [...touches.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); G.target = null; tapMarker.visible = false; }
+  else if (touches.size === 1 && e.button === 0) setTapTarget(e);
+});
 canvas.addEventListener('pointermove', e => {
   if (!touches.has(e.pointerId)) return; touches.set(e.pointerId, [e.clientX, e.clientY]);
   if (touches.size === 2 && pinch0 > 0) { const [a, b] = [...touches.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); zoomBy(pinch0 / d); pinch0 = d; }
+  else if (touches.size === 1 && G.target) setTapTarget(e);   // basılı tutup gezdirince takip eder
 });
+// Akıllı tahta modu: gölgesiz, düşük çözünürlük, büyük kontroller
+let TAHTA = false;
+function setTahta(on) {
+  TAHTA = on; document.body.classList.toggle('tahta', on); $('tahtaBtn').setAttribute('aria-checked', String(on));
+  sun.castShadow = !on;
+  renderer.setPixelRatio(on ? 1 : Math.min(window.devicePixelRatio || 1, LOWP ? 1.5 : 2)); resize();
+  try { localStorage.setItem('cebir-tahta', on ? '1' : '0'); } catch (e) {}
+}
+$('tahtaBtn').onclick = () => setTahta(!TAHTA);
+try { if (localStorage.getItem('cebir-tahta') === '1') setTahta(true); } catch (e) {}
 const touchEnd = e => { touches.delete(e.pointerId); if (touches.size < 2) pinch0 = 0; };
 canvas.addEventListener('pointerup', touchEnd); canvas.addEventListener('pointercancel', touchEnd); canvas.addEventListener('pointerleave', touchEnd);
 addEventListener('keydown', e => { if (e.key === '+' || e.key === '=') zoomBy(0.9); if (e.key === '-') zoomBy(1.1); });
@@ -1083,11 +1184,21 @@ function frame(now) {
       G.boost = Math.max(0, G.boost - dt); G.stun = Math.max(0, G.stun - dt); G.invuln = Math.max(0, G.invuln - dt);
       const inp = readInput(), sp = 5.4 * (G.boost > 0 ? 1.45 : 1);
       if (inp.m > 0.05) {
+        G.target = null; tapMarker.visible = false;   // joystick/klavye dokunmalı hedefi iptal eder
         // ekran yönünü kamera açısına göre dünyaya çevir
         const c = Math.cos(CAM.yaw), sn = Math.sin(CAM.yaw), mx = inp.x * c + inp.z * sn, mz = -inp.x * sn + inp.z * c;
         hero.position.x += mx * sp * dt; hero.position.z += mz * sp * dt; resolve(hero.position, 0.5);
         turn(hero, mx, mz, dt); heroAmt = inp.m; G.heroPhase += dt * 10 * inp.m * (G.boost > 0 ? 1.3 : 1);
+      } else if (G.target && G.path && G.path.length) {
+        const wp = G.path[0]; let dx = wp[0] - hero.position.x, dz = wp[1] - hero.position.z; const d = Math.hypot(dx, dz);
+        if (d < 0.2) { G.path.shift(); if (!G.path.length) { G.target = null; tapMarker.visible = false; } }
+        else {
+          dx /= d; dz /= d; const step = Math.min(d, sp * dt);
+          hero.position.x += dx * step; hero.position.z += dz * step; resolve(hero.position, 0.5);
+          turn(hero, dx, dz, dt); heroAmt = 1; G.heroPhase += dt * 10 * (G.boost > 0 ? 1.3 : 1);
+        }
       }
+      if (tapMarker.visible) { tapMarker.userData.t += dt; const k = 1 + 0.15 * Math.sin(tapMarker.userData.t * 8); tapMarker.scale.set(k, k, k); }
       if (G.stun <= 0) {
         let dx = hero.position.x - cat.position.x, dz = hero.position.z - cat.position.z; const d = Math.hypot(dx, dz) || 1;
         dx /= d; dz /= d;
