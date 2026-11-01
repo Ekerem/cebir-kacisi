@@ -1,0 +1,6 @@
+{
+  "appId": "com.madebyus.cebirkacisi",
+  "appName": "Cebir Kaçışı",
+  "webDir": "web",
+  "android": { "allowMixedContent": false }
+}

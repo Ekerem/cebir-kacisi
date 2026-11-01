@@ -1,0 +1,12 @@
+{
+  "name": "cebir-kacisi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "6. sınıf cebirsel ifadeler kovalama oyunu",
+  "scripts": { "android": "npx cap add android && npx cap sync android" },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}
