@@ -30,6 +30,6 @@ Dokunmatik joystick (tablet/telefon) veya ok tuşları / W A S D.
 Menüden **5. Sınıf** (İşlemlerle Cebirsel Düşünme: eşitlik ve işlem özellikleri, işlem önceliği, örüntüler, algoritmalar; kolaydan zora) veya **6. Sınıf** (yukarıdaki tablo) seçilir.
 
 ## Yeni sürüm
-`src/template.html` içindeki `APP_VERSION` ve `web/version.json` aynı anda artırılır, `python3 src/build.py` çalıştırılır ve yeni etiket (ör. `v1.5.1`) gönderilir. APK iş akışı Release'i kendisi oluşturur.
+`src/template.html` içindeki `APP_VERSION` ve `web/version.json` aynı anda artırılır, `python3 src/build.py` çalıştırılır ve `main` dalına gönderilir. APK iş akışı sürüm numarasını `version.json` dosyasından okuyup `v1.5.1` gibi bir Release'i kendisi oluşturur.
 
 Made by Us
