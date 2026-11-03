@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Cebir Kaçışı simgesi: kara tahtada tebeşirle "x", köşeden bakan Gri Bıyık -->
+  <defs>
+    <linearGradient id="tahta" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d6a54"/><stop offset="1" stop-color="#244234"/>
+    </linearGradient>
+    <radialGradient id="isik" cx="0.3" cy="0.25" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="kurk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c3c4cb"/><stop offset="1" stop-color="#8e8f97"/>
+    </linearGradient>
+    <radialGradient id="goz" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffe2a0"/><stop offset="0.35" stop-color="#ff5a3a"/><stop offset="1" stop-color="#b3101c"/>
+    </radialGradient>
+    <filter id="tebesir" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -0.7 1.12" result="m"/>
+      <feComposite in="SourceGraphic" in2="m" operator="in"/>
+    </filter>
+    <filter id="golge" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0b1a12" flood-opacity=".5"/>
+    </filter>
+  </defs>
+
+  <g id="zemin">
+    <rect width="1024" height="1024" fill="url(#tahta)"/>
+    <rect width="1024" height="1024" fill="url(#isik)"/>
+    <!-- silinmiş tebeşir izleri -->
+    <g fill="#ffffff" opacity=".05">
+      <rect x="90" y="120" width="420" height="38" rx="19"/><rect x="560" y="200" width="300" height="30" rx="15"/>
+      <rect x="120" y="840" width="360" height="34" rx="17"/>
+    </g>
+  </g>
+
+  <g id="on">
+    <!-- tebeşirle yazılmış x + ? -->
+    <g filter="url(#tebesir)" stroke-linecap="round" fill="none">
+      <path d="M190 250 L430 520 M430 250 L190 520" stroke="#ffd447" stroke-width="72"/>
+      <path d="M520 385 h120 M580 325 v120" stroke="#f4f1e4" stroke-width="40"/>
+      <path d="M700 300 q0 -55 60 -55 q60 0 60 55 q0 40 -48 62 q-14 8 -14 40" stroke="#f4f1e4" stroke-width="40"/>
+      <circle cx="758" cy="480" r="22" fill="#f4f1e4" stroke="none"/>
+    </g>
+
+    <!-- köşeden bakan Gri Bıyık -->
+    <g filter="url(#golge)">
+      <path d="M520 1024 C520 760 600 620 760 620 C920 620 1000 760 1000 1024 Z" fill="#9bd92a"/>
+      <path d="M560 1024 C560 800 640 700 760 700 C880 700 960 800 960 1024" fill="none" stroke="#86c21f" stroke-width="18"/>
+      <path d="M720 850 L790 800 L735 900 L800 880" fill="none" stroke="#2e7a2a" stroke-width="20" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- kulaklar -->
+      <path d="M590 600 L612 420 L715 520 Z" fill="#9fa0a8"/>
+      <path d="M930 600 L908 420 L805 520 Z" fill="#9fa0a8"/>
+      <path d="M612 560 L624 465 L685 525 Z" fill="#e48aae"/>
+      <path d="M908 560 L896 465 L835 525 Z" fill="#e48aae"/>
+      <!-- baş -->
+      <ellipse cx="760" cy="640" rx="200" ry="170" fill="url(#kurk)"/>
+      <path d="M736 488 l-8 50 M760 484 v54 M784 488 l8 50" stroke="#6f7078" stroke-width="12" stroke-linecap="round"/>
+      <!-- kızgın kaşlar ve parlayan gözler -->
+      <path d="M640 575 L725 605 M880 575 L795 605" stroke="#2a2a30" stroke-width="20" stroke-linecap="round"/>
+      <circle cx="692" cy="640" r="36" fill="#16161a"/><circle cx="828" cy="640" r="36" fill="#16161a"/>
+      <circle cx="692" cy="640" r="26" fill="url(#goz)"/><circle cx="828" cy="640" r="26" fill="url(#goz)"/>
+      <ellipse cx="692" cy="640" rx="6" ry="20" fill="#0a0a0c"/><ellipse cx="828" cy="640" rx="6" ry="20" fill="#0a0a0c"/>
+      <circle cx="684" cy="628" r="6" fill="#fff"/><circle cx="820" cy="628" r="6" fill="#fff"/>
+      <!-- burun, ağız, bıyık -->
+      <path d="M745 690 h30 l-15 18 z" fill="#e48aae" stroke="#2a2a30" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M760 708 v18 M722 748 q20 -26 38 -22 q18 -4 38 22" fill="none" stroke="#2a2a30" stroke-width="8" stroke-linecap="round"/>
+      <g stroke="#2a2a30" stroke-width="5" stroke-linecap="round">
+        <path d="M690 700 L560 680 M690 715 L555 722 M694 730 L570 765"/>
+        <path d="M830 700 L960 680 M830 715 L965 722 M826 730 L950 765"/>
+      </g>
+    </g>
+  </g>
+</svg>

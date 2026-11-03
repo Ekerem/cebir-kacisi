@@ -19,6 +19,8 @@ jobs:
         run: echo "ANDROID_HOME=$ANDROID_HOME" && ls "$ANDROID_HOME"
       - run: npm install
       - run: npx cap add android && npx cap sync android
+      - name: Uygulama simgesi (assets/ klasöründen)
+        run: npx --yes @capacitor/assets@3.0.5 generate --android --iconBackgroundColor '#2a4739' --splashBackgroundColor '#2a4739'
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk cebir-kacisi.apk
       - id: v
