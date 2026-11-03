@@ -6,7 +6,7 @@ const ROOT = new URL('./', self.location).href;
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll([ROOT, ROOT + 'version.json', ROOT + 'three.min.js', ROOT + 'GLTFLoader.js', ROOT + 'RoomEnvironment.js', ROOT + 'karakterler.js']))
+      .then(c => c.addAll([ROOT, ROOT + 'version.json', ROOT + 'three.min.js', ROOT + 'GLTFLoader.js', ROOT + 'RoomEnvironment.js', ROOT + 'karakterler-hafif.js']))
       .catch(() => {})
       .then(() => self.skipWaiting())
   );

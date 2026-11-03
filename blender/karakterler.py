@@ -9,6 +9,8 @@ from mathutils import Vector, Matrix
 
 OUT = sys.argv[-1] if sys.argv[-1].endswith('.glb') else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web', 'karakterler.glb')
 random.seed(7)
+# CEBIR_LITE=1: zayıf cihazlar (akıllı tahta) için az bölmeli, az saç telli hafif model
+LITE = os.environ.get('CEBIR_LITE') == '1'
 bpy.ops.wm.read_factory_settings(use_empty=True)
 COL = bpy.context.scene.collection
 
@@ -40,6 +42,8 @@ def obj_from_bm(name, bm, m, loc=(0, 0, 0), smooth=True):
         for p in me.polygons: p.use_smooth = True
     return o
 def subsurf(o, lv=2):
+    if LITE: lv -= 1
+    if lv <= 0: return o
     s = o.modifiers.new('sub', 'SUBSURF'); s.levels = lv; s.render_levels = lv; return o
 
 def skin(name, verts, edges, radii, m, wf, lv=2):
@@ -54,6 +58,7 @@ def chain(name, pts, radii, m, wf, lv=2):
     return skin(name, pts, [(i, i + 1) for i in range(len(pts) - 1)], radii, m, wf, lv)
 
 def sphere(name, r, m, wf, loc, scale=(1, 1, 1), seg=(24, 12), shape=None, lv=1, uv=False):
+    if LITE and seg[0] > 12: seg = (max(10, seg[0] * 2 // 3), max(6, seg[1] * 2 // 3))
     bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=seg[0], v_segments=seg[1], radius=r, calc_uvs=uv)
     for v in bm.verts:
         v.co = Vector((v.co.x * scale[0], v.co.y * scale[1], v.co.z * scale[2]))
@@ -63,6 +68,7 @@ def sphere(name, r, m, wf, loc, scale=(1, 1, 1), seg=(24, 12), shape=None, lv=1,
     return reg(o, wf)
 
 def torus(name, R, r, m, wf, loc, rot=(0, 0, 0), scale=(1, 1, 1), seg=(32, 10)):
+    if LITE: seg = (max(10, seg[0] // 2), max(4, seg[1] // 2))
     bm = bmesh.new(); rings = []
     for i in range(seg[0]):
         a = 2 * math.pi * i / seg[0]; ring = []
@@ -77,6 +83,7 @@ def torus(name, R, r, m, wf, loc, rot=(0, 0, 0), scale=(1, 1, 1), seg=(32, 10)):
     return reg(o, wf)
 
 def tube(name, pts, radius, m, wf, taper=None, res=6, flat=1.0, bev=2):
+    if LITE: res = max(2, res // 2); bev = max(0, bev - 1)
     cu = bpy.data.curves.new(name, 'CURVE'); cu.dimensions = '3D'
     cu.bevel_depth = radius; cu.bevel_resolution = bev; cu.use_fill_caps = False
     sp = cu.splines.new('NURBS'); sp.points.add(len(pts) - 1)
@@ -286,7 +293,7 @@ for k in range(10):   # alın perçemi
     x1 = side * (0.02 + i * 0.022); x2 = side * (0.035 + i * 0.024); z2 = 0.045 - i * 0.012
     tube(f'hero_fringe_{k}', [P(0.008 * side, -0.035, 0.15), P(x1 * 0.8, -0.115, 0.115), P(x2, -0.132 + i * 0.006, z2 + 0.02), P(x2 + side * 0.012, -0.124 + i * 0.008, z2 - 0.012)],
          0.017, HAIR if i % 2 else HAIRD, W_HEAD, taper=[0.9, 1.0, 0.7, 0.12], flat=0.55)
-    for j in range(2):   # perçem içinde ince teller
+    for j in range(0 if LITE else 2):   # perçem içinde ince teller
         o = (j - 0.5) * 0.008
         tube(f'hero_fringe_s{k}_{j}', [P(0.008 * side + o, -0.04, 0.152), P(x1 * 0.8 + o, -0.121, 0.116), P(x2 + o, -0.138 + i * 0.006, z2 + 0.018), P(x2 + side * 0.014 + o, -0.128 + i * 0.008, z2 - 0.02)],
              0.004, HAIRD, W_HEAD, taper=[0.6, 1, 0.8, 0.1], bev=1)
@@ -295,21 +302,22 @@ for s in (-1, 1):
         o = j * 0.008
         tube(f'hero_strand_{s}_{j}', [P((0.112 + o) * s, -0.06 + o, 0.06), P((0.13 + o) * s, -0.075 + o, -0.02), P((0.125 + o) * s, -0.07 + o, -0.1), P((0.112 + o) * s, -0.06 + o, -0.16 - j * 0.015)],
              0.007 - j * 0.0015, HAIR if j else HAIRD, W_HEAD, taper=[1, 0.9, 0.7, 0.15])
-for k in range(40):   # arkaya taranmış ince tutamlar
-    a = -1.3 + k * (2.6 / 39) + random.uniform(-0.03, 0.03)
+NL = 16 if LITE else 40
+for k in range(NL):   # arkaya taranmış ince tutamlar
+    a = -1.3 + k * (2.6 / (NL - 1)) + random.uniform(-0.03, 0.03)
     sx, cy = math.sin(a), math.cos(a); side = 1 if sx >= 0 else -1
     w = random.uniform(-0.006, 0.006)
     pts = [P(0.0 + w, -0.02, 0.149), P(0.072 * sx, 0.072 * cy, 0.132), P(0.128 * sx + w, 0.112 * cy + 0.02, 0.045), P(0.085 * side + w, 0.115 + w, -0.04)]
-    tube(f'hero_lock_{k}', pts, random.uniform(0.008, 0.012), HAIRD if k % 3 == 0 else HAIR, W_HEAD, taper=[0.35, 1, 0.9, 0.45])
+    tube(f'hero_lock_{k}', pts, random.uniform(0.008, 0.012) * (1.8 if LITE else 1), HAIRD if k % 3 == 0 else HAIR, W_HEAD, taper=[0.35, 1, 0.9, 0.45])
 
 # örgüler: üç tutam, her tutam üç ince telden
 for s, side in ((1, 'L'), (-1, 'R')):
-    a, m_, b = BR[s]; N = 80
+    a, m_, b = BR[s]; N = 44 if LITE else 80
     def center(t):
         if t < 0.5: return a.lerp(m_, t * 2)
         return m_.lerp(b, (t - 0.5) * 2)
     for k in range(3):
-        for j in range(3):
+        for j in ((1,) if LITE else range(3)):
             pts, tap = [], []
             for i in range(N):
                 t = i / (N - 1); c = center(t); rb = 0.021 * (1 - 0.35 * t)
@@ -317,11 +325,12 @@ for s, side in ((1, 'L'), (-1, 'R')):
                 off = (j - 1) * 0.0055
                 pts.append((c.x + rb * math.cos(ph) + off * math.sin(ph), c.y + rb * math.sin(2 * ph) * 0.45 + off * 0.5, c.z + 0.004 * math.sin(ph) + off * 0.3))
                 tap.append(1 - 0.4 * t)
-            tube(f'hero_braid_{side}_{k}_{j}', pts, 0.0075, HAIRD if (k + j) % 3 == 0 else HAIR, W_BRAID(side, s), taper=tap, res=3, bev=1)
+            tube(f'hero_braid_{side}_{k}_{j}', pts, 0.0135 if LITE else 0.0075, HAIRD if (k + j) % 3 == 0 else HAIR, W_BRAID(side, s), taper=tap, res=3, bev=1)
     end = b + Vector((0, 0, -0.005))
     torus(f'hero_tie_{side}', 0.013, 0.006, TIE, W_BRAID(side, s), tuple(end), seg=(16, 6))
-    for k in range(7):
-        ang = k * 2 * math.pi / 7
+    NT = 4 if LITE else 7
+    for k in range(NT):
+        ang = k * 2 * math.pi / NT
         tube(f'hero_tuft_{side}_{k}', [tuple(end + Vector((0, 0, -0.005))), tuple(end + Vector((0.012 * math.cos(ang), 0.012 * math.sin(ang), -0.045))),
                                         tuple(end + Vector((0.017 * math.cos(ang), 0.017 * math.sin(ang), -0.085 - 0.01 * (k % 2))))], 0.006, HAIR, W_BRAID(side, s), taper=[1, 0.8, 0.1])
 

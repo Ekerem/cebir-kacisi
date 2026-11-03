@@ -97,6 +97,21 @@ canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;}
 #catArrow::after{content:'';position:absolute;right:-11px;top:50%;margin-top:-8px;border:8px solid transparent;border-left:11px solid #c0283d;}
 #catInd .face{animation:pulse 1s ease-in-out infinite;}
 @keyframes pulse{50%{transform:scale(1.08);}}
+/* Hafif grafik: buzlu cam bulanıklığı ve vinyet zayıf cihazlarda her karede pahalıdır */
+body.lite .glass,body.lite #stick{-webkit-backdrop-filter:none;backdrop-filter:none;}
+body.lite .glass{background:linear-gradient(180deg,#ffffff,#f3f1ec);}
+body.lite #stick{background:rgba(255,255,255,.35);}
+body.lite #vignette{display:none;}
+/* Hafif modda oyun sırasında ekranda kalan katmanlar sade: gölge, yazı gölgesi, sürekli animasyon yok */
+body.lite #hud *,body.lite #hud,body.lite #stick,body.lite #knob,body.lite #keyhint,body.lite #catInd *,body.lite #toast,body.lite #toast *{box-shadow:none!important;text-shadow:none!important;animation:none!important;transition:none!important;filter:none!important;}
+body.lite #board{background:var(--wood);}
+body.lite #board .slate{background:var(--chalk);}
+body.lite #dots i.on{background:#ffe08a;}
+body.lite #knob{background:#e9edf3;border:2px solid #aab3c4;}
+body.lite #stick{border:2px solid rgba(255,255,255,.8);}
+body.lite #catInd .face{background:#d9364b;}
+body.lite .chip,body.lite .iconbtn,body.lite #keyhint{border:1px solid #d9dbe2;}
+#perf{font:700 12px/1.3 var(--body);color:var(--ink-soft);text-align:center;font-variant-numeric:tabular-nums;}
 /* Akıllı tahta modu: büyük kontroller ve yazılar */
 body.tahta #stick{width:220px;height:220px;}
 body.tahta #knob{width:100px;height:100px;margin:-50px 0 0 -50px;}
@@ -225,7 +240,9 @@ body.tahta #keyhint{font-size:17px;}
         <li>Yakalanırsan bir can gider. 4 bölümü bitir!</li>
       </ul>
     </div>
-    <button class="toggle" id="tahtaBtn" role="switch" aria-checked="false"><span><b>Akıllı tahta modu</b>Büyük kontroller, daha akıcı görüntü</span><span class="sw"></span></button>
+    <button class="toggle" id="liteBtn" role="switch" aria-checked="false"><span><b>Hafif grafik</b>Yavaş cihazlar ve akıllı tahtalar için akıcı görüntü</span><span class="sw"></span></button>
+    <button class="toggle" id="tahtaBtn" role="switch" aria-checked="false"><span><b>Akıllı tahta modu</b>Büyük joystick, büyük yazılar</span><span class="sw"></span></button>
+    <div id="perf"></div>
     <div class="btns"><button class="btn sec" id="updBtn">🔄 Güncelle</button></div>
     <div id="updmsg"></div>
   </div>
@@ -271,11 +288,10 @@ body.tahta #keyhint{font-size:17px;}
 <script src="three.min.js"></script>
 <script src="GLTFLoader.js"></script>
 <script src="RoomEnvironment.js"></script>
-<script src="karakterler.js"></script>
 <script>
 'use strict';
 /* ================= Ayarlar ================= */
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 const GITHUB_USER = 'Ekerem';           // GitHub kullanıcı adınız
 const REPO_NAME   = 'cebir-kacisi';
 const PAGES_BASE  = `https://${GITHUB_USER}.github.io/${REPO_NAME}/`;
@@ -319,23 +335,32 @@ const sfx = { good: () => beep([660, 880, 1175], 0.1), bad: () => beep([300, 220
 /* ================= Sahne: fiziksel tabanlı ışık ================= */
 const canvas = $('scene');
 const LOWP = Math.min(innerWidth, innerHeight) < 700 || /Android|iPad|iPhone/i.test(navigator.userAgent);
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOWP ? 1.5 : 2));
+/* Grafik kalitesi: 'oto' (varsayılan), 'hafif' veya 'yuksek'. Ekran kartı yoksa (yazılımsal çizim) otomatik hafif. */
+const GPU = (() => { try { const c = document.createElement('canvas'), gl = c.getContext('webgl') || c.getContext('experimental-webgl'); if (!gl) return 'yok';
+  const ext = gl.getExtension('WEBGL_debug_renderer_info'); return String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)); } catch (e) { return '?'; } })();
+const SOFT_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(GPU);
+const KALITE = (() => { let v = null; try { v = localStorage.getItem('cebir-kalite'); } catch (e) {}
+  const u = new URLSearchParams(location.search).get('kalite'); return window.CEBIR_KALITE || u || v || 'oto'; })();
+const LITE = KALITE === 'hafif' || (KALITE === 'oto' && SOFT_GPU);
+document.body.classList.toggle('lite', LITE);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, powerPreference: 'high-performance' });
+// Hafif modda tuval en fazla ~1280 piksel genişlikte çizilir (1920'lik tahtada %67), gerekirse daha da düşer
+let renderScale = LITE ? Math.min(1, (SOFT_GPU ? 900 : 1280) / Math.max(innerWidth, 1)) : Math.min(window.devicePixelRatio || 1, LOWP ? 1.5 : 2);
+renderer.setPixelRatio(renderScale);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.82;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = !LITE; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.physicallyCorrectLights = false;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcfd8e0);
 scene.fog = new THREE.Fog(0xcfd8e0, 42, 80);
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+if (!LITE) { const pmrem = new THREE.PMREMGenerator(renderer); scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture; }
 
-scene.add(new THREE.HemisphereLight(0xf4f7ff, 0x8a7a66, 0.28));
-const sun = new THREE.DirectionalLight(0xfff1dc, 1.35);
-sun.position.set(7, 14, 9); sun.castShadow = true;
+scene.add(new THREE.HemisphereLight(0xf4f7ff, 0x8a7a66, LITE ? 0.85 : 0.28));
+const sun = new THREE.DirectionalLight(0xfff1dc, LITE ? 1.15 : 1.35);
+sun.position.set(7, 14, 9); sun.castShadow = !LITE;
 sun.shadow.mapSize.set(LOWP ? 1024 : 2048, LOWP ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 1, far: 60 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; sun.shadow.radius = 4;
@@ -343,6 +368,18 @@ scene.add(sun, sun.target);
 const fill = new THREE.DirectionalLight(0xc8dcff, 0.25); fill.position.set(-8, 6, -4); scene.add(fill);
 
 const col = h => new THREE.Color(h).convertSRGBToLinear();   // kodda yazılan renkler sRGB'dir
+// Hafif modda bütün fiziksel tabanlı malzemeler köşe başına ışıklanan ucuz Lambert malzemeye çevrilir
+const LAMBERT = new Map();
+function toLambert(m, skinned) {
+  const key = m.uuid + (skinned ? 's' : ''); if (LAMBERT.has(key)) return LAMBERT.get(key);
+  const l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map || null, emissive: m.emissive || new THREE.Color(0), emissiveMap: m.emissiveMap || null,
+    emissiveIntensity: m.emissiveIntensity ?? 1, transparent: m.transparent, opacity: m.opacity, side: m.side, depthWrite: m.depthWrite, skinning: !!skinned });
+  l.name = m.name; LAMBERT.set(key, l); return l;
+}
+function liteify(root) {
+  if (!LITE) return;
+  root.traverse(o => { if (o.isMesh && o.material && o.material.isMeshStandardMaterial) { o.material = toLambert(o.material, o.isSkinnedMesh); o.castShadow = o.receiveShadow = false; } });
+}
 const std = (color, rough = 0.6, metal = 0, extra = {}) => { const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: rough, metalness: metal }, extra)); m.color = col(color); if (extra.emissive !== undefined) m.emissive = col(extra.emissive); return m; };
 function canvasTex(w, h, draw, srgb = true) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -683,6 +720,7 @@ function spawnBubbles(options) {
     scene.add(g);
     const arrow = new THREE.Group(), cone = new THREE.Mesh(arrowGeo, std(color, 0.3, 0, { emissive: color, emissiveIntensity: 0.25 }));
     cone.rotation.x = Math.PI / 2; cone.position.z = 1.55; cone.scale.set(1, 1, 0.45); arrow.add(cone); arrow.position.y = 0.12; scene.add(arrow);
+    liteify(g); liteify(arrow);
     bubbles.push({ g, orb, ring, text, tex, x, z, arrow, sp, seed: Math.random() * 6 });
   });
 }
@@ -837,7 +875,8 @@ $('updBtn').onclick = () => checkUpdate($('updmsg'));
 $('updBtn2').onclick = () => checkUpdate($('updmsg2'));
 
 /* ================= Döngü ================= */
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+let boardBottom = 160;
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); boardBottom = $('board').getBoundingClientRect().bottom || boardBottom; }
 addEventListener('resize', resize); resize();
 const camTarget = new THREE.Vector3(), tmpT = new THREE.Vector3(), tmpV = new THREE.Vector3();
 // Oyun kamerası: hafif yandan, alçak açılı takip kamerası. Uzaklık yakınlaştırma ile değişir.
@@ -918,14 +957,21 @@ canvas.addEventListener('pointermove', e => {
   if (touches.size === 2 && pinch0 > 0) { const [a, b] = [...touches.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); zoomBy(pinch0 / d); pinch0 = d; }
   else if (touches.size === 1 && G.target) setTapTarget(e);   // basılı tutup gezdirince takip eder
 });
-// Akıllı tahta modu: gölgesiz, düşük çözünürlük, büyük kontroller
+// Akıllı tahta modu: büyük kontroller ve yazılar
 let TAHTA = false;
 function setTahta(on) {
   TAHTA = on; document.body.classList.toggle('tahta', on); $('tahtaBtn').setAttribute('aria-checked', String(on));
-  sun.castShadow = !on;
-  renderer.setPixelRatio(on ? 1 : Math.min(window.devicePixelRatio || 1, LOWP ? 1.5 : 2)); resize();
   try { localStorage.setItem('cebir-tahta', on ? '1' : '0'); } catch (e) {}
+  setTimeout(resize, 50);
 }
+// Hafif grafik anahtarı: model ve çizici değiştiği için sayfa yeniden açılır
+$('liteBtn').setAttribute('aria-checked', String(LITE));
+$('liteBtn').onclick = () => {
+  if (window.CEBIR_KALITE) return;   // tahta dosyasında hep hafif
+  try { localStorage.setItem('cebir-kalite', LITE ? 'yuksek' : 'hafif'); } catch (e) {}
+  $('loading').hidden = false; $('loading').textContent = LITE ? 'Yüksek grafiğe geçiliyor…' : 'Hafif grafiğe geçiliyor…';
+  setTimeout(() => location.reload(), 60);
+};
 $('tahtaBtn').onclick = () => setTahta(!TAHTA);
 try { if (localStorage.getItem('cebir-tahta') === '1') setTahta(true); } catch (e) {}
 const touchEnd = e => { touches.delete(e.pointerId); if (touches.size < 2) pinch0 = 0; };
@@ -936,7 +982,7 @@ const catInd = $('catInd'), catArrow = $('catArrow');
 function updateCatIndicator() {
   if (G.mode !== 'play') { catInd.hidden = true; return; }
   tmpV.set(cat.position.x, 2.4, cat.position.z).project(camera);
-  const W = innerWidth, H = innerHeight, m = 34, top = $('board').getBoundingClientRect().bottom + 8;
+  const W = innerWidth, H = innerHeight, m = 34, top = boardBottom + 8;
   const behind = tmpV.z > 1; let x = (tmpV.x * 0.5 + 0.5) * W, y = (-tmpV.y * 0.5 + 0.5) * H;
   if (!behind && x > m && x < W - m && y > top && y < H - m) { catInd.hidden = true; return; }
   catInd.hidden = false;
@@ -953,9 +999,33 @@ function turn(obj, dx, dz, dt) {
   while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
   obj.rotation.y += d * Math.min(1, dt * 12);
 }
+
+/* ================= Performans: kare hızı ölçümü, otomatik hafif mod, uyarlamalı çözünürlük ================= */
+const PERF = { frames: 0, t0: 0, fps: 0, checked: false, started: false };
+function perfStart() { PERF.started = true; PERF.frames = 0; PERF.t0 = performance.now() + 1200; }
+function perfTick(now) {
+  if (!PERF.started || now < PERF.t0) return;
+  PERF.frames++;
+  const el = now - PERF.t0; if (el < 2500) return;
+  PERF.fps = PERF.frames * 1000 / el; PERF.frames = 0; PERF.t0 = now;
+  $('perf').textContent = `Grafik: ${LITE ? 'Hafif' : 'Yüksek'} · ${Math.round(PERF.fps)} kare/sn`;
+  // Otomatik: ilk ölçümde yavaşsa hafif grafiğe geç (yalnız kullanıcı kalite seçmediyse)
+  if (!PERF.checked) { PERF.checked = true;
+    if (!LITE && KALITE === 'oto' && PERF.fps < 28 && G.mode === 'menu') {
+      try { localStorage.setItem('cebir-kalite', 'hafif'); } catch (e) {}
+      $('loading').hidden = false; $('loading').textContent = 'Bu cihaz için hafif grafiğe geçiliyor…'; setTimeout(() => location.reload(), 400); return;
+    } }
+  // Hafif modda hâlâ yavaşsa çözünürlüğü kademeli düşür, hızlanınca geri yükselt
+  if (LITE) {
+    const maxS = Math.min(1, (SOFT_GPU ? 900 : 1280) / Math.max(innerWidth, 1));
+    if (PERF.fps < 24 && renderScale > 0.4) { renderScale = Math.max(0.4, renderScale * 0.8); renderer.setPixelRatio(renderScale); resize(); }
+    else if (PERF.fps > 50 && renderScale < maxS) { renderScale = Math.min(maxS, renderScale * 1.15); renderer.setPixelRatio(renderScale); resize(); }
+  }
+}
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now; G.t += dt;
+  const dt = Math.min(0.1, (now - last) / 1000); last = now; G.t += dt;   // yavaş cihazda da karakter gerçek hızda koşar
+  perfTick(now, dt);
   const portrait = camera.aspect < 1;
   if (G.mode === 'closeup') { renderer.render(scene, camera); requestAnimationFrame(frame); return; }   // test görünümü
   if (G.mode === 'menu' || G.mode === 'loading') {
@@ -1028,12 +1098,43 @@ function frame(now) {
 placeShowcase();
 requestAnimationFrame(frame);
 (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { drawBoard(boardTex.image.getContext('2d'), 1024, 320); boardTex.needsUpdate = true; });
-(function loadModels() {   // Blender modeli karakterler.js içinde base64 olarak gömülüdür
+// Hareketsiz sınıf eşyalarını malzemeye göre tek geometride birleştir: ~140 çizim çağrısı → ~8
+function mergeStatic(group) {
+  group.updateMatrixWorld(true);
+  const buckets = new Map();
+  group.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) { const k = o.material.uuid; if (!buckets.has(k)) buckets.set(k, { mat: o.material, list: [] }); buckets.get(k).list.push(o); } });
+  const merged = new THREE.Group();
+  for (const { mat, list } of buckets.values()) {
+    let vCount = 0, iCount = 0;
+    const geos = list.map(o => { let g = o.geometry.clone(); if (!g.index) g = g.toNonIndexed ? g : g; g.applyMatrix4(o.matrixWorld); vCount += g.attributes.position.count; iCount += g.index ? g.index.count : g.attributes.position.count; return g; });
+    const pos = new Float32Array(vCount * 3), nor = new Float32Array(vCount * 3), uv = new Float32Array(vCount * 2), idx = new Uint32Array(iCount);
+    let vo = 0, io = 0;
+    for (const g of geos) {
+      const n = g.attributes.position.count;
+      pos.set(g.attributes.position.array, vo * 3); if (g.attributes.normal) nor.set(g.attributes.normal.array, vo * 3); if (g.attributes.uv) uv.set(g.attributes.uv.array, vo * 2);
+      if (g.index) { const a = g.index.array; for (let i = 0; i < a.length; i++) idx[io + i] = a[i] + vo; io += a.length; }
+      else { for (let i = 0; i < n; i++) idx[io + i] = vo + i; io += n; }
+      vo += n; g.dispose();
+    }
+    const mg = new THREE.BufferGeometry();
+    mg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); mg.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); mg.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    mg.setIndex(new THREE.BufferAttribute(idx, 1)); mg.computeBoundingSphere();
+    const m = new THREE.Mesh(mg, mat); m.castShadow = list.some(o => o.castShadow); m.receiveShadow = true; m.matrixAutoUpdate = false; merged.add(m);
+  }
+  group.parent.add(merged); group.parent.remove(group);
+  return merged;
+}
+liteify(scene);
+mergeStatic(world);
+(function loadModels() {   // Blender modeli base64 olarak gömülü bir .js dosyasındadır; hafif modda küçük model yüklenir
   const fail = (err) => { $('loading').textContent = 'Karakterler yüklenemedi. Sayfayı yenileyip tekrar dene.'; console.error(err); };
-  try {
-    const bin = atob(window.KARAKTERLER_GLB), buf = new Uint8Array(bin.length);
+  const key = LITE ? 'KARAKTERLER_HAFIF_GLB' : 'KARAKTERLER_GLB', file = LITE ? 'karakterler-hafif.js' : 'karakterler.js';
+  if (window[key]) return go(window[key]);
+  const sc = document.createElement('script'); sc.src = file; sc.onload = () => go(window[key]); sc.onerror = fail; document.head.appendChild(sc);
+  function go(b64) { try {
+    const bin = atob(b64), buf = new Uint8Array(bin.length); window[key] = null;
     for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-    new THREE.GLTFLoader().parse(buf.buffer, '', (gltf) => { setupModel(gltf); $('loading').hidden = true; toMenu(); }, fail);
-  } catch (e) { fail(e); }
+    new THREE.GLTFLoader().parse(buf.buffer, '', (gltf) => { setupModel(gltf); liteify(hero); liteify(cat); $('loading').hidden = true; toMenu(); perfStart(); }, fail);
+  } catch (e) { fail(e); } }
 })();
 </script>
