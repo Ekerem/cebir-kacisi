@@ -25,10 +25,10 @@ const LEVELS6 = [
       () => { const v = pick(VARS), k = rnd(2, 8);
         return q(`${k} arkadaş ${v} tane cevizi eşit paylaşıyor. Birine kaç ceviz düşer?`,
           `${v}/${k}`, [`${k}${v}`, `${v} − ${k}`, `${k}/${v}`], `Eşit paylaşma bölmedir: ${v}/${k}`); },
-      () => { const v = pick(VARS), k = rnd(2, 6), m = rnd(1, 9);
+      () => { const v = pick(VARS), k = rnd(2, 6); let m = rnd(2, 9); if (m === k) m = k + 1;   // m = k olursa iki seçenek aynı olur
         return q(`"Bir sayının ${k} katının ${m} fazlası" cebirsel ifadesi hangisi?`,
           `${k}${v} + ${m}`, [`${k}(${v} + ${m})`, `${m}${v} + ${k}`, `${k}${v} − ${m}`], `Önce ${k} katı (${k}${v}), sonra ${m} fazlası: ${k}${v} + ${m}`); },
-      () => { const v = pick(VARS), k = rnd(2, 6), m = rnd(1, 9);
+      () => { const v = pick(VARS), k = rnd(2, 6); let m = rnd(2, 9); if (m === k) m = k + 1;   // m = k olursa iki seçenek aynı olur
         return q(`"Bir sayının ${m} fazlasının ${k} katı" cebirsel ifadesi hangisi?`,
           `${k}(${v} + ${m})`, [`${k}${v} + ${m}`, `${m}(${v} + ${k})`, `${k}${v} − ${m}`], `Önce ${m} fazlası (${v} + ${m}), sonra ${k} katı: ${k}(${v} + ${m})`); },
       () => { const v = pick(VARS), k = rnd(2, 9);
@@ -52,7 +52,7 @@ const LEVELS6 = [
           [`${k} + ${v}`, `${v} − ${k}`, `${k}${v} + ${k}`], `${k}${v}, ${k} tane ${v}'nin toplamıdır. ${right} de ${k} tane ${v} eder.`); },
       () => { const v = pick(VARS), k = rnd(2, 5), m = rnd(1, 6);
         return q(`${k}(${v} + ${m}) ifadesine denk olan hangisi?`,
-          `${k}${v} + ${k * m}`, [`${k}${v} + ${m}`, `${v} + ${k * m}`, `${k + m}${v}`], `${k} ile hem ${v}'yi hem ${m}'yi çarp: ${k}${v} + ${k * m}`); },
+          `${k}${v} + ${k * m}`, [`${k}${v} + ${m}`, `${v} + ${k * m}`, `${k + m}${v}`], `${k}, parantezin içindeki iki terimle de çarpılır: ${k}·${v} + ${k}·${m} = ${k}${v} + ${k * m}`); },
       () => { const v = pick(VARS), k = rnd(2, 9); let m = rnd(1, 9); if (m === k) m++;
         return q(`${k}${v} + ${m} ifadesinde ${v}'nin katsayısı kaçtır?`,
           k, [m, k + m, k * m], `Harfin önündeki sayı katsayıdır: ${k}`); },
@@ -78,7 +78,7 @@ const LEVELS6 = [
       () => { const d = rnd(2, 6), a0 = rnd(1, 9), c = a0 - d; const seq = [0, 1, 2, 3].map(i => a0 + i * d).join(', ');
         const rule = `${d}n${sgn(c)}`;
         return q(`Örüntü: ${seq}, … n. adımdaki terimin kuralı nedir?`, rule,
-          [`${d}n${sgn(a0)}`, `n${sgn(d)}`, `${a0}n${sgn(d)}`], `Her adımda ${d} artıyor → ${d}n. 1. adımda ${a0} çıkması için: ${rule}`); },
+          [`${d}n${sgn(a0)}`, `n${sgn(d)}`, (a0 === 1 || a0 === d) ? `${d + 1}n${sgn(c)}` : `${a0}n${sgn(d)}`], `Her adımda ${d} artıyor → ${d}n. 1. adımda ${a0} çıkması için: ${rule}`); },
       () => { const d = rnd(2, 6), a0 = rnd(1, 9), c = a0 - d, s = rnd(6, 12); const seq = [0, 1, 2, 3].map(i => a0 + i * d).join(', ');
         const val = d * s + c;
         return q(`Örüntü: ${seq}, … ${s}. adımdaki terim kaçtır?`, val,
@@ -108,7 +108,7 @@ const LEVELS6 = [
       () => { const k = rnd(2, 5), m = rnd(1, 9), x = rnd(2, 9), r = k * x + m;
         return q(`Aklından bir sayı tut, ${k} ile çarp, ${m} ekle. Sonuç ${r}. Tuttuğun sayı kaç?`, x,
           [x + 1, r - m, x - 1], `Tersine git: ${r} − ${m} = ${r - m}, ${r - m} ÷ ${k} = ${x}`); },
-      () => { const k = rnd(2, 5), m = rnd(1, 7);
+      () => { const k = rnd(2, 5); let m = rnd(2, 7); if (m === k) m = k + 1;
         return q(`Algoritma: sayıyı al, ${m} ekle, ${k} ile çarp. Bu algoritmanın cebirsel ifadesi hangisi?`,
           `${k}(x + ${m})`, [`${k}x + ${m}`, `${m}(x + ${k})`, `x + ${k * m}`], `Önce ekleme (x + ${m}), sonra çarpma: ${k}(x + ${m})`); },
       () => { const v = pick(VARS), k = rnd(2, 5), m = rnd(1, 4), x = rnd(m + 1, 10);

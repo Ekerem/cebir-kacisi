@@ -44,7 +44,8 @@ const LEVELS5 = [
         return q(`${n}³ = ?`, n ** 3, [n * 3, n * n, n ** 3 + n], `${n}³ = ${n} × ${n} × ${n} = ${n ** 3}`); } },
       { t: 3, f: () => { const n = rnd(2, 4), b = rnd(2, 4), c = rnd(2, 4);
         return q(`${n}² + ${b} × ${c} = ?`, n * n + b * c, [(n * n + b) * c, n * n + b + c, n * 2 + b * c === n * n + b * c ? n * n + b * c + 2 : n * 2 + b * c], `Önce kare: ${n * n}, sonra çarpma: ${b * c}, en son toplama: ${n * n + b * c}`); } },
-      { t: 3, f: () => { const p = rnd(2, 4), s = pick([6, 8, 10]), t = rnd(2, 5);
+      { t: 3, f: () => { const p = rnd(2, 4), s = pick([6, 8, 10]); let t = rnd(2, 5); if (t === p) t = p + 1;   // p = t olursa 'p + s × t' çeldiricisi de doğru olurdu
+       
         return q(`${p} paket ${s}'${({ 6: 'lı', 8: 'li', 10: 'lu' })[s]} kalem ve ${t} tane tek kalem alındı. Hangi işlem toplam kalemi verir?`, `${p} × ${s} + ${t}`, [`${p} × (${s} + ${t})`, `${p} + ${s} × ${t}`, `${p} + ${s} + ${t}`], `Önce paketlerdeki kalemler (${p} × ${s}), sonra tek kalemler: ${p} × ${s} + ${t} = ${p * s + t}`); } },
     ]
   },
